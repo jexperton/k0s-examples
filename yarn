@@ -1,0 +1,12 @@
+#!/bin/sh
+docker run --rm --init -it \
+  --entrypoint yarn \
+  --user $(id -u) \
+  --workdir /src \
+  -p 3030:3000 \
+  -v $(pwd)/.yarn:/.yarn:cached \
+  -v $(pwd):/src \
+  -e YARN_CACHE_FOLDER=/.yarn \
+  -e COMMIT_SHORT_HASH=$(git rev-parse --short=8 HEAD) \
+  node:16-slim "$@"
+ 
