@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app: __CI_PROJECT_NAME__
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry
+      containers:
+        - name: node
+          image: __CI_REGISTRY_IMAGE__:__CI_COMMIT_SHORT_SHA__
+          resources:
+            requests:
+              cpu: "0"
+              memory: "0"
+            limits:
+              cpu: "0.125"
+              memory: 64M
+          ports:
+            - containerPort: 3000

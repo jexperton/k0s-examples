@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api
+  labels:
+    app: __CI_PROJECT_NAME__
+    tier: backend
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+    - hosts:
+        - __KUBE_INGRESS_HOST__
+      secretName: __CI_PROJECT_NAME__-api-tls
+  rules:
+    - host: __KUBE_INGRESS_HOST__
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3000
+  ingressClassName: nginx

@@ -1,0 +1,56 @@
+image: docker:19.03.13
+
+stages:
+  - package
+  - deploy
+  - promote
+  - delete
+
+services:
+  - docker:19.03.13-dind
+
+package:
+  stage: package
+  when: manual
+  image: docker:19.03.13-dind
+  script: |
+    echo ${CI_REGISTRY_PASSWORD} | docker login -u ${CI_REGISTRY_USER} ${CI_REGISTRY} --password-stdin
+    docker build -t ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA} --build-arg COMMIT_SHORT_HASH=${CI_COMMIT_SHORT_SHA} .
+    docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
+
+deploy:
+  needs: [package]
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  stage: deploy
+  script: |
+    export KUBE_NAMESPACE=${CI_PROJECT_NAME}-${CI_COMMIT_SHORT_SHA}
+    export KUBE_INGRESS_HOST=${CI_COMMIT_SHORT_SHA}.${CI_PROJECT_NAME}.k0s.gaudi.sh
+    ./sh/configure-kubectl.sh
+    ./sh/deploy.sh
+
+promote to prod:
+  when: manual
+  needs: [deploy]
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  stage: promote
+  script: |
+    export KUBE_NAMESPACE=${CI_PROJECT_NAME}-${CI_COMMIT_SHORT_SHA}
+    export KUBE_INGRESS_HOST=${CI_PROJECT_NAME}.k0s.gaudi.sh
+    ./sh/configure-kubectl.sh
+    ./sh/promote.sh
+
+delete env:
+  when: manual
+  needs: [deploy]
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  stage: delete
+  script: |
+    export KUBE_NAMESPACE=${CI_PROJECT_NAME}-${CI_COMMIT_SHORT_SHA}
+    ./sh/configure-kubectl.sh
+    kubectl delete namespace $KUBE_NAMESPACE

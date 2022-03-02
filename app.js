@@ -1,15 +1,15 @@
-const express = require("express");
 const { getRandomName } = require("./fn/randomName");
-const app = express();
+const host = "0.0.0.0";
 const port = 3000;
 
-app.get("/", (req, res) => {
-  res.send({
-    commitHash: process.env.COMMIT_SHORT_HASH,
-    randomName: getRandomName(),
+require("http")
+  .createServer((req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Env", `node-${process.env.NODE_VERSION}`);
+    res.writeHead(200);
+    if (req.url == "/version") res.end(process.env.COMMIT);
+    else res.end(getRandomName());
+  })
+  .listen(port, host, () => {
+    console.log(`Server is running on http://${host}:${port}`);
   });
-});
-
-app.listen(port, () => {
-  console.log(`Listening on port ${port}`);
-});
